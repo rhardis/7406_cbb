@@ -1,0 +1,50 @@
+---
+title: "March Madness ML"
+author: "Richard Hardis, Arjun Goyal, Fred Sackfield, Anthony Temeliescu"
+date: "3/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Abstract
+
+# Data Exploration
+```{r}
+# Clear any old data
+remove(list = ls())
+
+# Load in data
+full_data = read.csv("cbb_full.csv")
+```
+
+```{r}
+# Perform data exploration, outlier detection, and produce any plots required
+source("data_exploration.R")    # Loads functions from data exploration file
+data_no_outliers = remove_outliers(full_data)
+scaled_data = normalize_numerics(data_no_outliers)
+```
+
+# Methods
+
+```{r}
+# Load in algorithms from algo file
+source("algorithms.R")
+library(MLmetrics)
+
+x_train = data_no_outliers[1:1200,3:21]
+x_test = data_no_outliers[1201:nrow(data_no_outliers),3:21]
+y_train = data_no_outliers[1:1200,22]
+y_test = data_no_outliers[1201:nrow(data_no_outliers),22]
+
+y_lasso = lasso_reg(x_train, x_test, y_train, y_test)
+
+MSE(y_lasso, y_test)
+
+plot(y_lasso-y_test)
+
+
+```
+
