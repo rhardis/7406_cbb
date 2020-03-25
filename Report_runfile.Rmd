@@ -11,6 +11,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Abstract
 
+# Data Collection
+
+The main portion of our data is taken from the Kaggle dataset called College Basketball Dataset by Andrew Sundberg (https://www.kaggle.com/andrewsundberg/college-basketball-dataset#cbb.csv).  It contains data on 24 different variables measuring relevant team performance metrics such as adjusted tempo, tournament seed, and defensive rebound percentage. In total, the dataset contains 1757 rows and includes 5 seasons of data from 2015 to 2019. A driving motivation of the project is to work with novel or unconventional data points to explore alternate angles of predicting NCAA tournament performance. To this end, we treated the kaggle dataset as our "base" set, which we then looked to supplement with additional features.
+
+For these additional features, we came up with ideas for quantitative data points that we believed could be useful in predicting post-season performance. One such feature that we added is regular season performance against the spread (ATS). We believe this data point is not widely used in other NCAA tournament modeling efforts, and it provides an interesting perspective on a team's regular season performance based on market expectations. Another feature that we added was coach's past performance, both in regular season wins and tournament wins. We believe that a coach's pedigree and past tournament performance could be a significant factor in tournament performance. 
+
+We wrote Python web scraping programs to collect ATS data and coaching data from Covers.com and KenPom.com, respectively. These scripts imported the new data into a SQL database, where the data was then cleaned and integrated with our base set from Kaggle. The resulting "full" dataset was then exported from SQL into a csv file, which will be used for the rest of the analysis below. 
+
 # Data Exploration
 ```{r}
 # Clear any old data
