@@ -28,30 +28,6 @@ ORDER BY b.ats, a.[YEAR]
 UPDATE dbo.cbbteams SET TEAM = 'Little Rock' WHERE TEAM = 'Arkansas Little Rock'
 UPDATE dbo.cbbteams SET TEAM = 'IPFW' WHERE TEAM = 'Fort Wayne'
 
-/*
-SELECT TeamName, TeamID, SUM(a.Cover) as totalcovers, COUNT(*) as totalgames,
-CONVERT(DECIMAL(10,2),100*(CAST(SUM(a.Cover) as float)/CAST(COUNT(*) as float))) AS ats
-INTO [7406Project].[dbo].[2015ATS]
-FROM (
-SELECT k.GameID, k.W_TeamName as TeamName, k.W_TeamID as TeamID,
-CASE WHEN (k.W_TeamID = k.P_TeamID AND k.[P_Cover?] = 1) OR (k.W_TeamID <> k.P_TeamID) THEN 1
-	 ELSE 0 END AS Cover
-FROM dbo.CBB_KPGames k
-JOIN dbo.CBB_Map_Game m ON k.GameID = m.KP_GameID
-JOIN dbo.CBB_GameResults_Box g ON m.CBB_GameID = g.GameID
-WHERE k.Season = '2015' AND g.GameType = 'Regular'
-UNION
-SELECT k.GameID, k.L_TeamName as TeamName, k.L_TeamID as TeamID,
-CASE WHEN (k.L_TeamID <> k.P_TeamID AND k.[P_Cover?] = 0) THEN 1
-	 ELSE 0 END AS Cover
-FROM dbo.CBB_KPGames k
-JOIN dbo.CBB_Map_Game m ON k.GameID = m.KP_GameID
-JOIN dbo.CBB_GameResults_Box g ON m.CBB_GameID = g.GameID
-WHERE k.Season = '2015' AND g.GameType = 'Regular') a
---WHERE TeamName = 'Florida St.'
-GROUP BY TeamName, TeamID
-ORDER BY ats
-*/
 
 DELETE FROM dbo.ATS WHERE season = '2014-2015'
 
