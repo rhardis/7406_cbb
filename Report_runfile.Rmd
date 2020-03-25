@@ -16,6 +16,11 @@ knitr::opts_chunk$set(echo = TRUE)
 # Clear any old data
 remove(list = ls())
 
+# Write the status check file
+fileConn<-file("status.txt")
+writeLines("The file did not run successfully.", fileConn)
+close(fileConn)
+
 # Load in data
 full_data = read.csv("cbb_full.csv")
 ```
@@ -46,5 +51,18 @@ MSE(y_lasso, y_test)
 plot(y_lasso-y_test)
 
 
+```
+
+
+
+
+
+
+```{r}
+# Status check.  Did the code reach this point?
+# Write the status check file
+fileConn<-file("status.txt")
+writeLines("The file ran successfully.", fileConn)
+close(fileConn)
 ```
 
