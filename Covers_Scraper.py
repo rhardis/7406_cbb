@@ -23,7 +23,8 @@ SQLCommand = ('INSERT INTO dbo.ATS '+
               '(season, teamName, ats) '+
               'VALUES (?,?,?)')
 
-seasons = ['2015-2016','2016-2017','2017-2018','2018-2019','2019-2020']
+#seasons = ['2015-2016','2016-2017','2017-2018','2018-2019','2019-2020']
+seasons = ['2014-2015']
 
 base = 'https://www.covers.com/sport/basketball/ncaab/statistics/team-betting/'
 
