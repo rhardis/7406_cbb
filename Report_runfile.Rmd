@@ -45,6 +45,7 @@ scaled_data = normalize_numerics(data_no_outliers)
 ```{r}
 # Load in algorithms from algo file
 source("algorithms.R")
+source("cross-validation.R")
 library(MLmetrics)
 
 x_train = data_no_outliers[1:1200,3:21]
@@ -58,7 +59,8 @@ MSE(y_lasso, y_test)
 
 plot(y_lasso-y_test)
 
-
+regMSE = kfolds_cv(10)
+regMSE
 ```
 
 
