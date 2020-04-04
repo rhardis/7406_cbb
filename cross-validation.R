@@ -1,14 +1,57 @@
 library(doParallel)
-library(glmnet)
+
 
 kfolds_cv = function(kfolds, full_df){
-  registerDoParallel(cores=5)
+  full_df = na.omit(full_df)
+  
+  registerDoParallel(detectCores()-2)
   len = nrow(full_df)
   indices = sample(1:len, len, replace=F)
   
   remove.size = floor(len/kfolds)
   
+  # Get best parameters for the different models
+  library(glmnet)
+  get_best_lasso = function(full_df){
+    features_train = as.matrix(full_df[,-which(names(full_df) %in% c("POSTSEASON"))])
+    target_train = full_df[,which(names(full_df) %in% c("POSTSEASON"))]
+    
+    x_vars = features_train
+    y_var = target_train
+    
+    lambda_seq = 10^seq(2,-2,by=-.1)
+    
+    cv_output = cv.glmnet(x_vars, y_var, alpha=1, lambda = lambda_seq)
+    return(cv_output$lambda.min)
+  }
+  best_lasso_lambda = get_best_lasso(full_df)
+  
+  get_best_ridge = function(full_df){
+    features_train = as.matrix(full_df[,-which(names(full_df) %in% c("POSTSEASON"))])
+    target_train = full_df[,which(names(full_df) %in% c("POSTSEASON"))]
+    
+    x_vars = features_train
+    y_var = target_train
+    
+    lambda_seq = 10^seq(2,-2,by=-.1)
+    
+    cv_output = cv.glmnet(x_vars, y_var, alpha=0, lambda = lambda_seq)
+    return(cv_output$lambda.min)
+  }
+  best_ridge_lambda = get_best_ridge(full_df)
+
+  
+  
+  # Run kfolds
   k_metrics = foreach(k = 1:kfolds, .combine=rbind) %dopar% {
+  #k_metrics = matrix(0, 10, 4)
+  #for (k in 1:kfolds){
+    library(glmnet)
+    library(caret)
+    library(earth)
+    library(MLmetrics)
+    library(dplyr)
+    library(xgboost)
     
     # Correct games scoring function
     correct_games = function(preds, ytrue){
@@ -16,7 +59,6 @@ kfolds_cv = function(kfolds, full_df){
       return(sum(abs(preds-ytrue)<0.5)/length(ytrue))
     }
     
-    library(MLmetrics)
     
     # Split train and test data for this fold
     if (k != kfolds){
@@ -26,34 +68,51 @@ kfolds_cv = function(kfolds, full_df){
       remove.index = seq(1+(k-1)*remove.size, len)
     }
     
-    test.data = full_df[remove.index,-(ncol(full_df)-5)]
+    test.data = full_df[remove.index,]
     train.data = full_df[-remove.index,]
     
-    train.x.mat = as.matrix(train.data[,-(ncol(train.data)-5)])
-    train.y.mat = train.data[,(ncol(train.data)-5)]
-    test.x.mat = as.matrix(test.data[,-(ncol(test.data)-5)])
-    test.y.mat = test.data[,(ncol(test.data)-5)]
+    train.x.mat = as.matrix(train.data[,-which(names(full_df) %in% c("POSTSEASON"))])
+    train.y.mat = train.data[,which(names(full_df) %in% c("POSTSEASON"))]
+    test.x.mat = as.matrix(test.data[,-which(names(full_df) %in% c("POSTSEASON"))])
+    test.y.mat = test.data[,which(names(full_df) %in% c("POSTSEASON"))]
+    
+    
     
     # Get predictions for each model
+    lasso.model = glmnet(train.x.mat, train.y.mat, alpha=1, lambda = best_lasso_lambda)
+    pred.best_lasso = predict(lasso.model, s=best_lasso_lambda, newx=test.x.mat)
     
-    
-    best_lambda = .2
-    lasso.model = glmnet(train.x.mat, train.y.mat, alpha=1, lambda = best_lambda)
-    pred.best_lasso = predict(lasso.model, s=best_lambda, newx=test.x.mat)
+    ridge.model = glmnet(train.x.mat, train.y.mat, alpha=0, lambda = best_ridge_lambda)
+    pred.best_ridge = predict(ridge.model, s=best_ridge_lambda, newx=test.x.mat)
       
     linreg.model = lm(POSTSEASON~., data = train.data)
-    pred.linreg = predict(linreg.model, newdata = test.data)
+    pred.linreg = predict(linreg.model, newdata = as.data.frame(test.x.mat))
     
-    #pred.best_lasso = pred.linreg
+    mars.model = train(POSTSEASON~., data=train.data, method="earth")
+    pred.mars = mars.model %>% predict(as.data.frame(test.x.mat))
+    
+    boost.model = train(POSTSEASON~., data=train.data, method="xgbTree")
+    pred.boost = boost.model %>% predict(as.data.frame(test.x.mat))
+    
     
     # Score each model
     mse.lasso = MSE(pred.best_lasso, test.y.mat)
     acc.lasso = correct_games(pred.best_lasso, test.y.mat)
     
+    mse.ridge = MSE(pred.best_ridge, test.y.mat)
+    acc.ridge = correct_games(pred.best_ridge, test.y.mat)
+    
     mse.linreg = MSE(pred.linreg, test.y.mat)
     acc.linreg = correct_games(pred.linreg, test.y.mat)
     
-    to.k_metrics = c(mse.lasso, mse.linreg, acc.lasso, acc.linreg)
+    mse.mars = MSE(pred.mars, test.y.mat)
+    acc.mars = correct_games(pred.mars, test.y.mat)
+    
+    mse.boost = MSE(pred.boost, test.y.mat)
+    acc.boost = correct_games(pred.boost, test.y.mat)
+    
+    #k_metrics[k] = c(mse.lasso, mse.linreg, acc.lasso, acc.linreg)
+    to.k_metrics = c(mse.lasso, mse.ridge, mse.linreg, mse.mars, mse.boost, acc.lasso, acc.ridge, acc.linreg, acc.mars, acc.boost)
     to.k_metrics
   }
   
@@ -68,3 +127,4 @@ kfolds_cv = function(kfolds, full_df){
   
   return(k_metrics)
 }
+

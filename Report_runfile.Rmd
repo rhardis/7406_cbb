@@ -33,11 +33,13 @@ close(fileConn)
 full_data = read.csv("cbb_full.csv")
 ```
 
-```{r}
+```{r, message=F, warning=F, echo=F}
 # Perform data exploration, outlier detection, and produce any plots required
 source("data_exploration.R")    # Loads functions from data exploration file
 data_no_outliers = remove_outliers(full_data)
 scaled_data = normalize_numerics(data_no_outliers)
+scaled_data = cbind(cbind(with(scaled_data, model.matrix(~ CONF + 0))), scaled_data[,-which(names(scaled_data) %in% c("CONF"))])
+cleaned_data = scaled_data[complete.cases(scaled_data),-which(names(scaled_data) %in% c("TEAM"))]
 ```
 
 # Methods
@@ -46,9 +48,8 @@ scaled_data = normalize_numerics(data_no_outliers)
 # Load in algorithms from algo file
 source("cross-validation.R")
 
-cleaned_data = scaled_data[complete.cases(scaled_data),-1]
-
 k_mets = kfolds_cv(10, cleaned_data)
+k_mets
 ```
 
 
