@@ -47,3 +47,9 @@ POSTSEASON: Round where the given team was eliminated or where their season ende
 SEED: Seed in the NCAA March Madness Tournament
 
 YEAR: Season
+
+ATS: Team's "against the spread" winning percentage (shows how well a team performs versus expectation)
+
+PREV_TW: Coach's total previous NCAA tournament wins prior to the current season
+
+PREV_W: Coach's total regular season wins prior to the current season

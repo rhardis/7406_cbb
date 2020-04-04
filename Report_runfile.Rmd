@@ -44,23 +44,11 @@ scaled_data = normalize_numerics(data_no_outliers)
 
 ```{r}
 # Load in algorithms from algo file
-source("algorithms.R")
 source("cross-validation.R")
-library(MLmetrics)
 
-x_train = data_no_outliers[1:1200,3:21]
-x_test = data_no_outliers[1201:nrow(data_no_outliers),3:21]
-y_train = data_no_outliers[1:1200,22]
-y_test = data_no_outliers[1201:nrow(data_no_outliers),22]
+cleaned_data = scaled_data[complete.cases(scaled_data),-1]
 
-y_lasso = lasso_reg(x_train, x_test, y_train, y_test)
-
-MSE(y_lasso, y_test)
-
-plot(y_lasso-y_test)
-
-regMSE = kfolds_cv(10)
-regMSE
+k_mets = kfolds_cv(10, cleaned_data)
 ```
 
 
