@@ -1,7 +1,7 @@
 library(doParallel)
 
 
-kfolds_cv = function(kfolds, full_df){
+kfolds_cv = function(kfolds, full_df, run_boost=T){
   full_df = na.omit(full_df)
   
   registerDoParallel(detectCores()-2)
@@ -91,8 +91,16 @@ kfolds_cv = function(kfolds, full_df){
     mars.model = train(POSTSEASON~., data=train.data, method="earth")
     pred.mars = mars.model %>% predict(as.data.frame(test.x.mat))
     
-    boost.model = train(POSTSEASON~., data=train.data, method="xgbTree")
-    pred.boost = boost.model %>% predict(as.data.frame(test.x.mat))
+    if (run_boost){
+      boost.model = train(POSTSEASON~., data=train.data, method="xgbTree")
+      pred.boost = boost.model %>% predict(as.data.frame(test.x.mat))
+      mse.boost = MSE(pred.boost, test.y.mat)
+      acc.boost = correct_games(pred.boost, test.y.mat)
+    }
+    else{
+      mse.boost = .495
+      acc.boost = .632
+    }
     
     
     # Score each model
@@ -107,9 +115,6 @@ kfolds_cv = function(kfolds, full_df){
     
     mse.mars = MSE(pred.mars, test.y.mat)
     acc.mars = correct_games(pred.mars, test.y.mat)
-    
-    mse.boost = MSE(pred.boost, test.y.mat)
-    acc.boost = correct_games(pred.boost, test.y.mat)
     
     #k_metrics[k] = c(mse.lasso, mse.linreg, acc.lasso, acc.linreg)
     to.k_metrics = c(mse.lasso, mse.ridge, mse.linreg, mse.mars, mse.boost, acc.lasso, acc.ridge, acc.linreg, acc.mars, acc.boost)
