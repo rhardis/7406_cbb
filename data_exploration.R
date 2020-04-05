@@ -8,7 +8,7 @@ library(dplyr)
 #load the full file
 cbb_full <- read.csv('cbb_full.csv')
 
-cbb_full$YEAR <- as.factor(cbb_full$YEAR)
+cbb_full$YEAR <- as.numeric(cbb_full$YEAR)
 
 unique(cbb_full$TEAM) #353 unique teams
 unique(cbb_full$CONF) #33 unique conferences
@@ -65,10 +65,10 @@ remove_outliers = function(df){
 
 # Function to normalize columns of numeric features
 normalize_numerics = function(df, feature_cols="all"){
-  df$YEAR = as.factor(df$YEAR)    # protects year column from scaling
+  #df$YEAR = as.factor(df$YEAR)    # protects year column from scaling
   if(feature_cols=="all"){
     # Find all numerica columns and normalize them
-    df[,-c(1,2,22,23,24)] = scale(df[,-c(1,2,22,23,24)]) # does not attempt to scale factor columns
+    df[,-c(1,2,22,23)] = scale(df[,-c(1,2,22,23)]) # does not attempt to scale factor columns
   }
   else{
     for(col in feature_cols){
