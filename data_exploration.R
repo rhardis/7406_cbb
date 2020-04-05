@@ -30,6 +30,13 @@ plot_boxplot(cbb_full$CONF, cbb_full$BARTHAG)
 
 #Stats for teams with 0 postseason wins
 
+#filter where seed is not NA
+#teams that are outliers
+#vif scores
+
+#for linear regression, more details about the data (multicollinearity)
+
+
 stats_by_postseason_wins <- function(num_wins){
   a <- cbb_full %>%
     filter(POSTSEASON == num_wins) %>%
