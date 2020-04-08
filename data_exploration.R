@@ -58,7 +58,7 @@ normalize_numerics = function(df, feature_cols="all"){
   #df$YEAR = as.factor(df$YEAR)    # protects year column from scaling
   if(feature_cols=="all"){
     # Find all numerica columns and normalize them
-    df[,-c(1,2,22,23)] = scale(df[,-c(1,2,22,23)]) # does not attempt to scale factor columns
+    df[,-c(1,2,22,23,24)] = scale(df[,-c(1,2,22,23,24)]) # does not attempt to scale factor columns
   }
   else{
     for(col in feature_cols){

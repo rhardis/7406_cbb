@@ -39,7 +39,8 @@ source("data_exploration.R")    # Loads functions from data exploration file
 data_no_outliers = remove_outliers(full_data)
 scaled_data = normalize_numerics(data_no_outliers)
 scaled_data = cbind(cbind(with(scaled_data, model.matrix(~ CONF + 0))), scaled_data[,-which(names(scaled_data) %in% c("CONF"))])
-cleaned_data = scaled_data[complete.cases(scaled_data),-which(names(scaled_data) %in% c("TEAM"))]
+cleaned_data.team = scaled_data[complete.cases(scaled_data),]
+cleaned_data = cleaned_data.team[,-which(names(scaled_data) %in% c("TEAM"))]
 ```
 
 # Methods
@@ -48,12 +49,25 @@ cleaned_data = scaled_data[complete.cases(scaled_data),-which(names(scaled_data)
 # Load in algorithms from algo file
 source("cross-validation.R")
 
-k_mets = kfolds_cv(10, cleaned_data, run_boost=F)
+k_mets = kfolds_cv(10, cleaned_data, run_boost=T)
 k_mets
 ```
 
 
 
+
+
+```{r}
+library(caret)
+library(xgboost)
+test.x.mat = as.matrix(cleaned_data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
+boost.model.final = train(POSTSEASON~., data=cleaned_data, method="xgbTree")
+pred.boost.final = boost.model.final %>% predict(as.data.frame(test.x.mat))
+output = cbind(cleaned_data.team[, which(names(cleaned_data.team) %in% c("YEAR", "TEAM", "POSTSEASON"))], pred.boost.final)
+write.csv(output[output$YEAR == "2019",], "boost_predictions.csv", row.names = F)
+summary(boost.model.final)
+varImp(boost.model.final)
+```
 
 
 
