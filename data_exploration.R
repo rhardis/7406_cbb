@@ -14,46 +14,36 @@ unique(cbb_full$TEAM) #353 unique teams
 unique(cbb_full$CONF) #33 unique conferences
 dim(cbb_full) #1757 observations, 27 columns
 
+#filter to exclude teams that don't make the round of 64
+cbb_tourney <- cbb_full %>%
+  filter(!is.na(SEED)) #leaves you with 340 observations
+
+
+par(mfrow=c(1,2))
+#Offensive Percentage Stats
+boxplot(cbb_tourney[c(8,10,12,14,16,18)], las=2, main = "Offensive Stats", col="orange")
+#Defensive Percentage Stats
+boxplot(cbb_tourney[c(9,11,13,15,17,19)], las=2, main = "Defensive Stats", col="orange")
+
+par(mfrow=c(1,2))
+#adjusted offensive/defensive efficiency/tempo
+boxplot(cbb_tourney[c(5:6, 20)], las=2, main="Adjusted Efficiency and Tempo")
+#BARTHAG/Wins above Bubble
+boxplot(cbb_tourney[c(7,21)], las=2, main="BARTHAG and WAB")
+
+par(mfrow=c(1,2))
+#Games/Wins/Coach's Previous Tourney Wins
+boxplot(cbb_tourney[c(3:4, 25,26)], las=2, main="Games, Wins, 
+        Coach's Tourney Wins", col="orange")
+#Coach's Previous Regular Season Wins, 
+boxplot(cbb_tourney[27], las=2, main="Coach's Previous Regular 
+        Season Wins" )
+
+#No need to plot year, seed, and postseason for outliers
+
+
 #correlation matrix of quantitative variables
-corrplot::corrplot(cor(cbb_full[,c(5:21,25:27)]), type="upper")
-
-#Wins Above Bubble (WAB) strong positive relationship with ADJOE and BARTHAG. 
-#strong negative relationship with ADJDE (less points allowed, more wins above bubble).
-
-#Function to plot boxplots. Required inputs: the x and y axis you choose to plot.
-plot_boxplot = function(x_axis, y_axis){
-  q <- ggplot(data = cbb_full) + geom_boxplot(mapping=aes(x=x_axis, y = y_axis)) + coord_flip()
-  return(q)
-}
-
-plot_boxplot(cbb_full$CONF, cbb_full$BARTHAG)
-
-#Stats for teams with 0 postseason wins
-
-#filter where seed is not NA
-#teams that are outliers
-#vif scores
-
-#for linear regression, more details about the data (multicollinearity)
-
-
-stats_by_postseason_wins <- function(num_wins){
-  a <- cbb_full %>%
-    filter(POSTSEASON == num_wins) %>%
-    group_by(TEAM) %>%
-    summarise_if(is.numeric, mean)
-  
-  return(a)
-}
-
-zero_win_teams <- stats_by_postseason_wins(0)
-one_win_teams <- stats_by_postseason_wins(1)
-two_win_teams <- stats_by_postseason_wins(2)
-three_win_teams <- stats_by_postseason_wins(3)
-four_win_teams <- stats_by_postseason_wins(4)
-five_win_teams <- stats_by_postseason_wins(5)
-six_win_teams <- stats_by_postseason_wins(6)
-
+corrplot::corrplot(cor(cbb_tourney[,c(5:21,25:27)]), type="upper")
 
 
 # Dummy function to remove outliers.  For now this function just returns
