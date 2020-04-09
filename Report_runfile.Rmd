@@ -67,7 +67,7 @@ cleaned_data = cleaned_data.team[,-which(names(scaled_data) %in% c("TEAM"))]
 # Load in algorithms from algo file
 source("cross-validation.R")
 
-k_mets = kfolds_cv(10, cleaned_data, run_boost=T)
+k_mets = kfolds_cv(10, cleaned_data, run_boost=F)
 k_mets
 ```
 
@@ -81,6 +81,10 @@ library(xgboost)
 test.x.mat = as.matrix(cleaned_data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
 boost.model.final = train(POSTSEASON~., data=cleaned_data, method="xgbTree")
 pred.boost.final = boost.model.final %>% predict(as.data.frame(test.x.mat))
+
+```
+
+```{r}
 output = cbind(cleaned_data.team[, which(names(cleaned_data.team) %in% c("YEAR", "TEAM", "POSTSEASON"))], pred.boost.final)
 write.csv(output[output$YEAR == "2019",], "boost_predictions.csv", row.names = F)
 summary(boost.model.final)
