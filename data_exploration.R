@@ -18,32 +18,44 @@ dim(cbb_full) #1757 observations, 27 columns
 cbb_tourney <- cbb_full %>%
   filter(!is.na(SEED)) #leaves you with 340 observations
 
+#offensive/defensive percentage stats
+percentage_stats_plots <- function(){
+  par(mfrow=c(1,2))
+  boxplot(cbb_tourney[c(8,10,12,14,16,18)], las=2, main = "Offensive Stats", col="orange")
+  boxplot(cbb_tourney[c(9,11,13,15,17,19)], las=2, main = "Defensive Stats", col="orange")
+}
 
-par(mfrow=c(1,2))
-#Offensive Percentage Stats
-boxplot(cbb_tourney[c(8,10,12,14,16,18)], las=2, main = "Offensive Stats", col="orange")
-#Defensive Percentage Stats
-boxplot(cbb_tourney[c(9,11,13,15,17,19)], las=2, main = "Defensive Stats", col="orange")
 
-par(mfrow=c(1,2))
-#adjusted offensive/defensive efficiency/tempo
-boxplot(cbb_tourney[c(5:6, 20)], las=2, main="Adjusted Efficiency and Tempo")
-#BARTHAG/Wins above Bubble
-boxplot(cbb_tourney[c(7,21)], las=2, main="BARTHAG and WAB")
+adjusted_wins_plots <- function(){
+  par(mfrow=c(1,3))
+  #adjusted offensive/defensive efficiency/tempo
+  boxplot(cbb_tourney[c(5:6, 20)], las=2, main="Adjusted Efficiency and Tempo", col="orange")
+  #BARTHAG/Wins above Bubble
+  boxplot(cbb_tourney[7], las=2, main="BARTHAG", col="orange")
+  boxplot(cbb_tourney[21], las=2, main="Wins Above Bubble", col="orange")
+  
+}
 
-par(mfrow=c(1,2))
-#Games/Wins/Coach's Previous Tourney Wins
-boxplot(cbb_tourney[c(3:4, 25,26)], las=2, main="Games, Wins, 
+games_wins_plots <- function(){
+  par(mfrow=c(1,2))
+  #Games/Wins/Coach's Previous Tourney Wins
+  boxplot(cbb_tourney[c(3:4, 25,26)], las=2, main="Games, Wins, 
         Coach's Tourney Wins", col="orange")
-#Coach's Previous Regular Season Wins, 
-boxplot(cbb_tourney[27], las=2, main="Coach's Previous Regular 
-        Season Wins" )
+  #Coach's Previous Regular Season Wins, 
+  boxplot(cbb_tourney[27], las=2, main="Coach's Previous Regular 
+        Season Wins", col="orange")
+}
+
+
 
 #No need to plot year, seed, and postseason for outliers
 
-
-#correlation matrix of quantitative variables
-corrplot::corrplot(cor(cbb_tourney[,c(5:21,25:27)]), type="upper")
+corr_plot <- function(){
+  #correlation matrix of quantitative variables
+  corrplot::corrplot(cor(cbb_tourney[,c(5:21,25:27)]), type="upper")
+  
+  
+}
 
 
 # Dummy function to remove outliers.  For now this function just returns
