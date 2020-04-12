@@ -11,7 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Abstract
 
-# Data Collection
+# Report
+
+## Data Collection
 
 The main portion of our data is taken from the Kaggle dataset called College Basketball Dataset by Andrew Sundberg (https://www.kaggle.com/andrewsundberg/college-basketball-dataset#cbb.csv).  It contains data on 24 different variables measuring relevant team performance metrics such as adjusted tempo, tournament seed, and defensive rebound percentage. In total, the dataset contains 1757 rows and includes 5 seasons of data from 2015 to 2019. A driving motivation of the project is to work with novel or unconventional data points to explore alternate angles of predicting NCAA tournament performance. To this end, we treated the kaggle dataset as our "base" set, which we then looked to supplement with additional features.
 
@@ -19,7 +21,7 @@ For these additional features, we came up with ideas for quantitative data point
 
 We wrote Python web scraping programs to collect ATS data and coaching data from Covers.com and KenPom.com, respectively. These scripts imported the new data into a SQL database, where the data was then cleaned and integrated with our base set from Kaggle. The resulting "full" dataset was then exported from SQL into a csv file, which will be used for the rest of the analysis below. 
 
-# Data Exploration
+## Data Exploration
 ```{r}
 # Clear any old data
 remove(list = ls())
@@ -31,6 +33,7 @@ close(fileConn)
 
 # Load in data
 full_data = read.csv("cbb_full.csv")
+full_data$G = full_data$G - full_data$POSTSEASON
 ```
 
 ```{r, message=F, warning=F, echo=F}
@@ -61,35 +64,47 @@ scaled_data = cbind(cbind(with(scaled_data, model.matrix(~ CONF + 0))), scaled_d
 cleaned_data.team = scaled_data[complete.cases(scaled_data),]
 cleaned_data = cleaned_data.team[,-which(names(scaled_data) %in% c("TEAM"))]
 ```
-# Methods
+## Methods
+
+  In order to predict the number of tournament games won by a given team, several models were fit and assessed.  This prediction is a regression-type problem as the target variable is continuous over the range [0,6].  The five model types chosen for this task were lasso regression, ridge regression, multilinear regression, Multivariate Adaptive Regression Splines (MARS), boosting, and random forest.  For models with varying parameter values, such as lambda in lasso regression, an initial cross validation was run with built in cross validation functionality to find the best parameter values.  Once the best parameter models were gathered, all of the models were compared against each other using ten fold K-folds cross validation.  Two separate metrics were used to score the models.  The first is the mean squared error (MSE) of the model's prediction against the actual number of NCAA tournament games won.  The second is a custom metric called "accuracy" that measures the percentage of games correctly predicted within plus or minus a half game of the true value.  This metric was developed because it may have more applicability to game winner prediction if this model is used to fill out a March Madness Bracket than a pure MSE score.  Each model was scored and the average score for the ten cross validation folds is displayed in the table below.
 
 ```{r}
 # Load in algorithms from algo file
 source("cross-validation.R")
 
-k_mets = kfolds_cv(10, cleaned_data, run_boost=T)
+k_mets = kfolds_cv(10, cleaned_data, run_boost=F)
+
+colnames(k_mets) = c("Lasso","Ridge","MLR","MARS","Boosting", "Random Forest")
+rownames(k_mets) = c("MSE", "+/- 0.5 Game Prediction Accuracy")
+k_mets=round(k_mets,3)
 k_mets
 ```
 
+## Results
 
-
-
+  It can be seen from the above table that the best model was Ridge Regression.  Ridge regression had the highest accuracy and lowest MSE score.  The accuracy of this model is not very high, only guessing the number of games won (when rounded to the nearest integer) 59% of the time.  While this is better than a random guess, it is not much higher.  The Ridge Regression model was then retrained on the full cleaned dataset and predictions for all games in the dataset were made.  The coefficients for the model are found in the output below.
 
 ```{r}
-library(caret)
-library(xgboost)
-test.x.mat = as.matrix(cleaned_data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
-boost.model.final = train(POSTSEASON~., data=cleaned_data, method="xgbTree")
-pred.boost.final = boost.model.final %>% predict(as.data.frame(test.x.mat))
-output = cbind(cleaned_data.team[, which(names(cleaned_data.team) %in% c("YEAR", "TEAM", "POSTSEASON"))], pred.boost.final)
-write.csv(output[output$YEAR == "2019",], "boost_predictions.csv", row.names = F)
-summary(boost.model.final)
-varImp(boost.model.final)
+library(glmnet)
+train.x.mat = as.matrix(cleaned_data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
+train.y.mat = cleaned_data[,which(names(cleaned_data) %in% c("POSTSEASON"))]
+lambdas = 10^seq(3, -2, by = -.1)
+ridge.model_cv = cv.glmnet(train.x.mat, train.y.mat, alpha=0, lambda = lambdas)
+best_lambda = ridge.model_cv$lambda.min
+ridge.model = glmnet(train.x.mat, train.y.mat, alpha=0, lambda = best_lambda)
+pred.best_ridge = predict(ridge.model, s=best_lambda, newx=train.x.mat)
+ridge.model$beta
 ```
 
+## Conclusions
+  Even with advanced data mining techniques, predicting March Madness team wins remains difficult to do with good accuracy.  Despite this, these techniques are still valuable in two applications.  The first is for team coaches. The March Madness performance ridge regression model coefficients can be used to determine which factors are useful in improving team tournament wins.  All other factors held constant, several factors provide outside improvements or hinderances on win numbers.  Teams from stronger conferences such as the ACC or Big 12 have higher win predictions.  Conversely, conferences such as Big Sky or CAA are negatively impacted by their conference.  This is likely due to top conferences putting teams through a more difficult regular season schedule, having better talent overall, and having good coaches.  For a coach of a team in a less competitive conference, this signifies that the team may get some benefit from scheduling early-season out of conference games against opponents from strong conferences to help diminish the effect of playing conference games against weaker opponents.  
 
+```{r, echo=F, warning=F, message=F}
+output = cbind(cleaned_data.team[, which(names(cleaned_data.team) %in% c("YEAR", "TEAM", "POSTSEASON"))], pred.best_ridge)
+write.csv(output[output$YEAR == "2019",], "ridge_predictions.csv", row.names = F)
+```
 
-```{r}
+```{r, echo=F, warning=F, message=F}
 # Status check.  Did the code reach this point?
 # Write the status check file
 fileConn<-file("status.txt")

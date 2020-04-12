@@ -52,6 +52,7 @@ kfolds_cv = function(kfolds, full_df, run_boost=T){
     library(MLmetrics)
     library(dplyr)
     library(xgboost)
+    library(randomForest)
     
     # Correct games scoring function
     correct_games = function(preds, ytrue){
@@ -98,10 +99,12 @@ kfolds_cv = function(kfolds, full_df, run_boost=T){
       acc.boost = correct_games(pred.boost, test.y.mat)
     }
     else{
-      mse.boost = .495
-      acc.boost = .632
+      mse.boost = 0.817
+      acc.boost = .564
     }
     
+    rf = randomForest(POSTSEASON~.,data=train.data)
+    pred.rf = predict(rf, newdata=test.data[,-which(names(full_df) %in% c("POSTSEASON"))])
     
     # Score each model
     mse.lasso = MSE(pred.best_lasso, test.y.mat)
@@ -116,8 +119,11 @@ kfolds_cv = function(kfolds, full_df, run_boost=T){
     mse.mars = MSE(pred.mars, test.y.mat)
     acc.mars = correct_games(pred.mars, test.y.mat)
     
+    mse.rf = MSE(pred.rf, test.y.mat)
+    acc.rf = correct_games(pred.rf, test.y.mat)
+    
     #k_metrics[k] = c(mse.lasso, mse.linreg, acc.lasso, acc.linreg)
-    to.k_metrics = c(mse.lasso, mse.ridge, mse.linreg, mse.mars, mse.boost, acc.lasso, acc.ridge, acc.linreg, acc.mars, acc.boost)
+    to.k_metrics = c(mse.lasso, mse.ridge, mse.linreg, mse.mars, mse.boost, mse.rf, acc.lasso, acc.ridge, acc.linreg, acc.mars, acc.boost, acc.rf)
     to.k_metrics
   }
   
