@@ -29,7 +29,8 @@ percentage_stats_plots <- function(){
 adjusted_wins_plots <- function(){
   par(mfrow=c(1,3))
   #adjusted offensive/defensive efficiency/tempo
-  boxplot(cbb_tourney[c(5:6, 20)], las=2, main="Adjusted Efficiency and Tempo", col="orange")
+  boxplot(cbb_tourney[c(5:6, 20)], las=2, main="Adjusted Efficiency 
+  and Tempo", col="orange")
   #BARTHAG/Wins above Bubble
   boxplot(cbb_tourney[7], las=2, main="BARTHAG", col="orange")
   boxplot(cbb_tourney[21], las=2, main="Wins Above Bubble", col="orange")
