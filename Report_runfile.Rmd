@@ -34,6 +34,9 @@ close(fileConn)
 # Load in data
 full_data = read.csv("cbb_full.csv")
 full_data$G = full_data$G - full_data$POSTSEASON
+full_data$W = full_data$W - full_data$POSTSEASON
+full_data["AdjSpread"] = full_data$ADJOE-full_data$ADJDE
+full_data = na.omit(full_data)
 ```
 
 ```{r, message=F, warning=F, echo=F}
@@ -72,7 +75,7 @@ cleaned_data = cleaned_data.team[,-which(names(scaled_data) %in% c("TEAM"))]
 # Load in algorithms from algo file
 source("cross-validation.R")
 
-k_mets = kfolds_cv(10, cleaned_data, run_boost=F)
+k_mets = kfolds_cv(15, cleaned_data, run_boost=F)
 
 colnames(k_mets) = c("Lasso","Ridge","MLR","MARS","Boosting", "Random Forest")
 rownames(k_mets) = c("MSE", "+/- 0.5 Game Prediction Accuracy")
@@ -84,24 +87,76 @@ k_mets
 
   It can be seen from the above table that the best model was Ridge Regression.  Ridge regression had the highest accuracy and lowest MSE score.  The accuracy of this model is not very high, only guessing the number of games won (when rounded to the nearest integer) 59% of the time.  While this is better than a random guess, it is not much higher.  The Ridge Regression model was then retrained on the full cleaned dataset and predictions for all games in the dataset were made.  The coefficients for the model are found in the output below.
 
+
 ```{r}
 library(glmnet)
+library(MLmetrics)
 train.x.mat = as.matrix(cleaned_data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
 train.y.mat = cleaned_data[,which(names(cleaned_data) %in% c("POSTSEASON"))]
+test.y.mat = cleaned_data[,which(names(cleaned_data) %in% c("POSTSEASON"))]
 lambdas = 10^seq(3, -2, by = -.1)
-ridge.model_cv = cv.glmnet(train.x.mat, train.y.mat, alpha=0, lambda = lambdas)
+ridge.model_cv = cv.glmnet(train.x.mat, train.y.mat, alpha=1, lambda = lambdas)
 best_lambda = ridge.model_cv$lambda.min
-ridge.model = glmnet(train.x.mat, train.y.mat, alpha=0, lambda = best_lambda)
+ridge.model = glmnet(train.x.mat, train.y.mat, alpha=1, lambda = best_lambda)
 pred.best_ridge = predict(ridge.model, s=best_lambda, newx=train.x.mat)
+MSE(pred.best_ridge, test.y.mat)
+correct_games(pred.best_ridge, test.y.mat)
 ridge.model$beta
 ```
+
+```{r}
+library(glmnet)
+library(caret)
+library(earth)
+library(MLmetrics)
+library(dplyr)
+library(xgboost)
+library(randomForest)
+
+# Correct games scoring function
+correct_games = function(preds, ytrue){
+  # Returns the decimal value of game predictions strictly within 0.5 games of the true number of wins
+  return(sum(abs(preds-ytrue)<0.5)/length(ytrue))
+}
+
+test.data = cleaned_data
+train.data = cleaned_data
+
+train.x.mat = as.matrix(train.data[,-which(names(full_df) %in% c("POSTSEASON"))])
+train.y.mat = train.data[,which(names(full_df) %in% c("POSTSEASON"))]
+test.x.mat = as.matrix(test.data[,-which(names(full_df) %in% c("POSTSEASON"))])
+test.y.mat = test.data[,which(names(full_df) %in% c("POSTSEASON"))]
+
+
+# Get predictions for each model
+lasso.model = glmnet(train.x.mat, train.y.mat, alpha=1, lambda = best_lasso_lambda)
+pred.best_lasso = predict(lasso.model, s=best_lasso_lambda, newx=test.x.mat)
+
+ridge.model = glmnet(train.x.mat, train.y.mat, alpha=0, lambda = best_ridge_lambda)
+pred.best_ridge = predict(ridge.model, s=best_ridge_lambda, newx=test.x.mat)
+  
+linreg.model = lm(POSTSEASON~., data = train.data)
+pred.linreg = predict(linreg.model, newdata = as.data.frame(test.x.mat))
+
+mars.model = train(POSTSEASON~., data=train.data, method="earth")
+pred.mars = mars.model %>% predict(as.data.frame(test.x.mat))
+
+boost.model = train(POSTSEASON~., data=train.data, method="xgbTree")
+pred.boost = boost.model %>% predict(as.data.frame(test.x.mat))
+mse.boost = MSE(pred.boost, test.y.mat)
+acc.boost = correct_games(pred.boost, test.y.mat)
+
+rf = randomForest(POSTSEASON~.,data=train.data)
+pred.rf = predict(rf, newdata=test.data[,-which(names(full_df) %in% c("POSTSEASON"))])
+```
+
 
 ## Conclusions
   Even with advanced data mining techniques, predicting March Madness team wins remains difficult to do with good accuracy.  Despite this, these techniques are still valuable in two applications.  The first is for team coaches. The March Madness performance ridge regression model coefficients can be used to determine which factors are useful in improving team tournament wins.  All other factors held constant, several factors provide outside improvements or hinderances on win numbers.  Teams from stronger conferences such as the ACC or Big 12 have higher win predictions.  Conversely, conferences such as Big Sky or CAA are negatively impacted by their conference.  This is likely due to top conferences putting teams through a more difficult regular season schedule, having better talent overall, and having good coaches.  For a coach of a team in a less competitive conference, this signifies that the team may get some benefit from scheduling early-season out of conference games against opponents from strong conferences to help diminish the effect of playing conference games against weaker opponents.  
 
 ```{r, echo=F, warning=F, message=F}
 output = cbind(cleaned_data.team[, which(names(cleaned_data.team) %in% c("YEAR", "TEAM", "POSTSEASON"))], pred.best_ridge)
-write.csv(output[output$YEAR == "2019",], "ridge_predictions.csv", row.names = F)
+write.csv(output[output$YEAR == "2019",], "lasso_predictions.csv", row.names = F)
 ```
 
 ```{r, echo=F, warning=F, message=F}

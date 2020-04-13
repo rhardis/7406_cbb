@@ -99,8 +99,8 @@ kfolds_cv = function(kfolds, full_df, run_boost=T){
       acc.boost = correct_games(pred.boost, test.y.mat)
     }
     else{
-      mse.boost = 0.817
-      acc.boost = .564
+      mse.boost = 0.872
+      acc.boost = .469
     }
     
     rf = randomForest(POSTSEASON~.,data=train.data)
@@ -139,3 +139,8 @@ kfolds_cv = function(kfolds, full_df, run_boost=T){
   return(k_metrics)
 }
 
+# Correct games scoring function
+correct_games = function(preds, ytrue){
+  # Returns the decimal value of game predictions strictly within 0.5 games of the true number of wins
+  return(sum(abs(preds-ytrue)<0.5)/length(ytrue))
+}
