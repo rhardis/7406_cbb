@@ -62,7 +62,8 @@ Most teams that qualify for the tournament play and win roughly the same amount 
 ```{r, message=F, warning=F, echo=F}
 corr_plot(full_data)
 ```
-From the correlation plot of the quantitative variables, we see that a team's adjusted offensive effiency (ADJOE) has a positive correlation with some of the team's offensive percentage stats such as EFG_O, X2P_O, X3P_O. There is a strong positive correlation with the coach's previous tournament and regular season wins, as well as the BARTHAG rating. Teams with a high ADJOE have a strongly correlated WAB as they are more likely to make the tournament. Expectedly, the adjusted defensive efficiency (ADJDE) is negatively correlated with these explanatory variables given that a lower ADJDE is desired. EFG_O is strongly positively correlated with the team's two-point and three-point shooting percentage (X2P_O and X3P_O), and conversely the team's EFG_D is strongly positively correlated with the team's ablility to defend the two-point and three-point shooting of their opponent (X2P_D, X3P_D). Many of the explanatory variables are only weakly correlated with each other. We do see a moderate positive correlation between the WAB and the coach's previous tournament and regular season wins, perhaps indicating the impact of a coach's previous experience on a team's performance.
+  
+  From the correlation plot of the quantitative variables, we see that a team's adjusted offensive effiency (ADJOE) has a positive correlation with some of the team's offensive percentage stats such as EFG_O, X2P_O, X3P_O. There is a strong positive correlation with the coach's previous tournament and regular season wins, as well as the BARTHAG rating. Teams with a high ADJOE have a strongly correlated WAB as they are more likely to make the tournament. Expectedly, the adjusted defensive efficiency (ADJDE) is negatively correlated with these explanatory variables given that a lower ADJDE is desired. EFG_O is strongly positively correlated with the team's two-point and three-point shooting percentage (X2P_O and X3P_O), and conversely the team's EFG_D is strongly positively correlated with the team's ablility to defend the two-point and three-point shooting of their opponent (X2P_D, X3P_D). Many of the explanatory variables are only weakly correlated with each other. We do see a moderate positive correlation between the WAB and the coach's previous tournament and regular season wins, perhaps indicating the impact of a coach's previous experience on a team's performance.
 
 ```{r, message=F, warning=F, echo=F}
 scaled_data = normalize_numerics(full_data)
@@ -102,8 +103,6 @@ ridge.model_cv = cv.glmnet(train.x.mat, train.y.mat, alpha=1, lambda = lambdas)
 best_lambda = ridge.model_cv$lambda.min
 ridge.model = glmnet(train.x.mat, train.y.mat, alpha=1, lambda = best_lambda)
 pred.best_ridge = predict(ridge.model, s=best_lambda, newx=train.x.mat)
-MSE(pred.best_ridge, test.y.mat)
-correct_games(pred.best_ridge, test.y.mat)
 ridge.model$beta
 ```
 
