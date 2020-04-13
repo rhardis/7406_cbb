@@ -22,7 +22,7 @@ For these additional features, we came up with ideas for quantitative data point
 We wrote Python web scraping programs to collect ATS data and coaching data from Covers.com and KenPom.com, respectively. These scripts imported the new data into a SQL database, where the data was then cleaned and integrated with our base set from Kaggle. The resulting "full" dataset was then exported from SQL into a csv file, which will be used for the rest of the analysis below. 
 
 ## Data Exploration
-```{r}
+```{r, message=F, warning=F, echo=F}
 # Clear any old data
 remove(list = ls())
 
@@ -50,13 +50,14 @@ games_wins_plots()
 #data_no_outliers = remove_outliers(full_data)
 #exploration / plots
 ```
-The offensive percentage statistics were analyzed separately from the defensive percentage statistics to view outliers and trends. We see one team that shot at a higher field goal percentage (EFG_O) of 60% compared to other teams. There are a few teams that had a higher turnover rate (TOR) closer to 25% compared to themedian. ONe team had a significantly lower offensive rebound percentage (ORB), under 20%, compared to the median near 30%. The median two-point shooting percentage (X2P_0) is near 50% while two teams shot closer to 60%. We see that on defense, there were a few teams that caused more turnovers (TORD) compared to the median. While the median free throw rate allowed (FTRD) was near 30%, 6 teams allowed much higher rates near 50-55%. Two teams were good defenders against the two-point shooting of their opponents (X2P_D), only allowing under 40% compared to the median closer to 50%. 
+  
+  The offensive percentage statistics were analyzed separately from the defensive percentage statistics to view outliers and trends. We see one team that shot at a higher field goal percentage (EFG_O) of 60% compared to other teams. There are a few teams that had a higher turnover rate (TOR) closer to 25% compared to themedian. ONe team had a significantly lower offensive rebound percentage (ORB), under 20%, compared to the median near 30%. The median two-point shooting percentage (X2P_0) is near 50% while two teams shot closer to 60%. We see that on defense, there were a few teams that caused more turnovers (TORD) compared to the median. While the median free throw rate allowed (FTRD) was near 30%, 6 teams allowed much higher rates near 50-55%. Two teams were good defenders against the two-point shooting of their opponents (X2P_D), only allowing under 40% compared to the median closer to 50%. 
 
 To qualify for the tournament, most teams have a high adjusted offensive efficiency (ADJOE) that is higher than their adjusted defensive efficiency (ADJDE), indicating they should be able to score on division I teams effectively while preventing their opponents from scoring on them. The boxplot for BARTHAG indicates that the median chance of defeating the average division I opponent is roughly 90%. However, there are many outliers that are below 50% given that the tournament is open to 64 teams, many of which are from small basketball programs and less-competitive conferences. 
 
 Most teams that qualify for the tournament play and win roughly the same amount of games during the season. Some teams achieve a higher ATS score than the median since the tournament frequently sees lower-seeded teams advance against the odds. We see that the median number a coach's previous tournament wins (PREV_TW) is near 0, however there are a few teams who possess coaches with 20-60 games of winning experience in the tournament. A coach's previous regular season wins sits at a median of 200 with no outliers indicated.
 
-```{r, message=F, warning=F, echo=F}}
+```{r, message=F, warning=F, echo=F}
 corr_plot()
 ```
 From the correlation plot of the quantitative variables, we see that a team's adjusted offensive effiency (ADJOE) has a positive correlation with some of the team's offensive percentage stats such as EFG_O, X2P_O, X3P_O. There is a strong positive correlation with the coach's previous tournament and regular season wins, as well as the BARTHAG rating. Teams with a high ADJOE have a strongly correlated WAB as they are more likely to make the tournament. Expectedly, the adjusted defensive efficiency (ADJDE) is negatively correlated with these explanatory variables given that a lower ADJDE is desired. EFG_O is strongly positively correlated with the team's two-point and three-point shooting percentage (X2P_O and X3P_O), and conversely the team's EFG_D is strongly positively correlated with the team's ablility to defend the two-point and three-point shooting of their opponent (X2P_D, X3P_D). Many of the explanatory variables are only weakly correlated with each other. We do see a moderate positive correlation between the WAB and the coach's previous tournament and regular season wins, perhaps indicating the impact of a coach's previous experience on a team's performance.
@@ -71,7 +72,7 @@ cleaned_data = cleaned_data.team[,-which(names(scaled_data) %in% c("TEAM"))]
 
   In order to predict the number of tournament games won by a given team, several models were fit and assessed.  This prediction is a regression-type problem as the target variable is continuous over the range [0,6].  The five model types chosen for this task were lasso regression, ridge regression, multilinear regression, Multivariate Adaptive Regression Splines (MARS), boosting, and random forest.  For models with varying parameter values, such as lambda in lasso regression, an initial cross validation was run with built in cross validation functionality to find the best parameter values.  Once the best parameter models were gathered, all of the models were compared against each other using ten fold K-folds cross validation.  Two separate metrics were used to score the models.  The first is the mean squared error (MSE) of the model's prediction against the actual number of NCAA tournament games won.  The second is a custom metric called "accuracy" that measures the percentage of games correctly predicted within plus or minus a half game of the true value.  This metric was developed because it may have more applicability to game winner prediction if this model is used to fill out a March Madness Bracket than a pure MSE score.  Each model was scored and the average score for the ten cross validation folds is displayed in the table below.
 
-```{r}
+```{r, message=F, warning=F, echo=F}
 # Load in algorithms from algo file
 source("cross-validation.R")
 
@@ -85,10 +86,10 @@ k_mets
 
 ## Results
 
-  It can be seen from the above table that the best model was Ridge Regression.  Ridge regression had the highest accuracy and lowest MSE score.  The accuracy of this model is not very high, only guessing the number of games won (when rounded to the nearest integer) 59% of the time.  While this is better than a random guess, it is not much higher.  The Ridge Regression model was then retrained on the full cleaned dataset and predictions for all games in the dataset were made.  The coefficients for the model are found in the output below.
+  It can be seen from the above table that the best model by MSE score was Lasso Regression.  Lasso also has the second highest accuracy after MARS and is still above 50% accurate as measured by the custom metric.  Due to its high sores in both measurement categories, LASSO Regression was chosen as the model type for the final predictions.  It should be noted that the accuracy of this model for predicting any given team's tournament wins is barely above 50%, only slightly above random guessing.  In fact, when our model was used to generate a predicted winners bracket for the 2019 tournament and compared against the actual results it could be seen that most of the games that our model incorrectly predicted were cases where the two teams were extremely evenly matched measured by predicted wins.  Either team could have won the game that day and that is what makes March Madness simultaneously so entertaining and so difficult to predict.  Further insights can be derived from the final LASSO model trained on the full dataset to inform game predictions and coaching changes.  The coefficients for the model are found in the output below.
 
 
-```{r}
+```{r, message=F, warning=F, echo=F}
 library(glmnet)
 library(MLmetrics)
 train.x.mat = as.matrix(cleaned_data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
@@ -104,7 +105,9 @@ correct_games(pred.best_ridge, test.y.mat)
 ridge.model$beta
 ```
 
-```{r}
+  The two most important factors were Adjusted Spread and BARTHAG.  Adjusted spread, the difference between a team's offensive and defensive efficiency, scores teams that are excellent on offense and defense more than teams that only excel in one of the two areas.  BARTHAG, or the probability of a team beating a statistically "average" NCAA Division I team in a single game, has a strong negative effect on predicted wins.  This is surprising as one would expect a team with a better probability of winning against an average team to perform better in the tournament.  This, however, is not the case in the LASSO model fitted to the data.  It seems that the artificial BARTHAG measurement does not correspond with winning in the presence of the other included factors.  Other important factors include Adjusted Defensive Efficiency, Defensive Rebounding Rate, wins, and conference.
+
+```{r, message=F, warning=F, echo=F}
 library(glmnet)
 library(caret)
 library(earth)
@@ -112,6 +115,34 @@ library(MLmetrics)
 library(dplyr)
 library(xgboost)
 library(randomForest)
+
+get_best_lasso = function(cleaned_data){
+  features_train = as.matrix(cleaned_data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
+  target_train = cleaned_data[,which(names(cleaned_data) %in% c("POSTSEASON"))]
+  
+  x_vars = features_train
+  y_var = target_train
+  
+  lambda_seq = 10^seq(2,-2,by=-.1)
+  
+  cv_output = cv.glmnet(x_vars, y_var, alpha=1, lambda = lambda_seq)
+  return(cv_output$lambda.min)
+}
+best_lasso_lambda = get_best_lasso(cleaned_data)
+
+get_best_ridge = function(cleaned_data){
+  features_train = as.matrix(cleaned_data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
+  target_train = cleaned_data[,which(names(cleaned_data) %in% c("POSTSEASON"))]
+  
+  x_vars = features_train
+  y_var = target_train
+  
+  lambda_seq = 10^seq(2,-2,by=-.1)
+  
+  cv_output = cv.glmnet(x_vars, y_var, alpha=0, lambda = lambda_seq)
+  return(cv_output$lambda.min)
+}
+best_ridge_lambda = get_best_ridge(cleaned_data)
 
 # Correct games scoring function
 correct_games = function(preds, ytrue){
@@ -122,10 +153,10 @@ correct_games = function(preds, ytrue){
 test.data = cleaned_data
 train.data = cleaned_data
 
-train.x.mat = as.matrix(train.data[,-which(names(full_df) %in% c("POSTSEASON"))])
-train.y.mat = train.data[,which(names(full_df) %in% c("POSTSEASON"))]
-test.x.mat = as.matrix(test.data[,-which(names(full_df) %in% c("POSTSEASON"))])
-test.y.mat = test.data[,which(names(full_df) %in% c("POSTSEASON"))]
+train.x.mat = as.matrix(train.data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
+train.y.mat = train.data[,which(names(cleaned_data) %in% c("POSTSEASON"))]
+test.x.mat = as.matrix(test.data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
+test.y.mat = test.data[,which(names(cleaned_data) %in% c("POSTSEASON"))]
 
 
 # Get predictions for each model
@@ -147,12 +178,14 @@ mse.boost = MSE(pred.boost, test.y.mat)
 acc.boost = correct_games(pred.boost, test.y.mat)
 
 rf = randomForest(POSTSEASON~.,data=train.data)
-pred.rf = predict(rf, newdata=test.data[,-which(names(full_df) %in% c("POSTSEASON"))])
+pred.rf = predict(rf, newdata=test.data[,-which(names(cleaned_data) %in% c("POSTSEASON"))])
 ```
 
 
 ## Conclusions
   Even with advanced data mining techniques, predicting March Madness team wins remains difficult to do with good accuracy.  Despite this, these techniques are still valuable in two applications.  The first is for team coaches. The March Madness performance ridge regression model coefficients can be used to determine which factors are useful in improving team tournament wins.  All other factors held constant, several factors provide outside improvements or hinderances on win numbers.  Teams from stronger conferences such as the ACC or Big 12 have higher win predictions.  Conversely, conferences such as Big Sky or CAA are negatively impacted by their conference.  This is likely due to top conferences putting teams through a more difficult regular season schedule, having better talent overall, and having good coaches.  For a coach of a team in a less competitive conference, this signifies that the team may get some benefit from scheduling early-season out of conference games against opponents from strong conferences to help diminish the effect of playing conference games against weaker opponents.  
+  
+  In the future, these modeling techniques can be expanded upon and improved.  More granular data such as player level statistics and composition of team positions could be added.  More data beyond 5 years of tournaments would also help reduce the variance of this model.  There are two different ways this model could be extended.  The first direction uses the same target variable: number of tournament wins.  This choice of target variable reflects on the whole how good a given team is in a year and how well that performance is expected to translate into tournament play.  This is a more general measure of success.  The other, more specific method, is to predict a tournament's outcome game by game.  This would require more granular data and relies on predicting outcomes of specific head-to-head matchups between two different teams.  The seeding and order of games played has a much greater effect on this method's predictions than using the tournament wins prediction method.  Both are useful.  A coach may be more interested in how generally good his or her team is heading into a tournament or when recruiting specific types of players to improve important metrics such as defensive rebounding or offensive efficiency.  Someone who is betting on a March Madness bracket may be more intersted in the game-by-game winner prediction modeling technique as it forecasts a single specific bracket outcome.  Overall, the pursuit of better NCAA Tournament win predictions is important to fans and coaching staff alike.  Even though the crystal ball of perfect win prediction remains elusive, better data and analytical techniques are bringing that closer to reality.
 
 ```{r, echo=F, warning=F, message=F}
 output = cbind(cleaned_data.team[, which(names(cleaned_data.team) %in% c("YEAR", "TEAM", "POSTSEASON"))], pred.best_ridge)
