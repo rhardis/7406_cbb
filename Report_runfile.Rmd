@@ -71,6 +71,41 @@ scaled_data = cbind(cbind(with(scaled_data, model.matrix(~ CONF + 0))), scaled_d
 cleaned_data.team = scaled_data[complete.cases(scaled_data),]
 cleaned_data = cleaned_data.team[,-which(names(scaled_data) %in% c("TEAM"))]
 ```
+
+## Clustering
+
+In the spirit of better understanding which team qualities correspond to higher chances of success, we can use clustering methods to group teams together based on similar metrics. We use the most common clustering technique, which is K-Means clustering. K-Means clustering starts with a supplied parameter k to specify the number of clusters we want to group the data into. A small set of data points are chosen randomly to serve as the "initial" cluster centers. The k-means algorithm then iterates through the dataset, calculates the Euclidean distance between each point and the k cluster centers, assigns the new point to the closest cluster, and then recalculates the cluster centers after each data point is added. 
+
+One important consideration with clustering is to avoid the "curse of dimensionality". In other words, we should be selective in what features we use for clustering because distance-based algorithms suffer when number of features increases. So we have a few options:
+
+a) use domain knowledge to pick out relevant and non-redundant features; this allows for better interpretability because original features are preserved
+
+b) correlation-based selection, i.e. eliminate variables from pairs of correlated ones; this is more systematic, and still preserves features
+
+c) do PCA first before clustering; this is more efficient for the task at hand, but takes away from interpretability
+
+
+Since we prefer interpretability of our model, we'll choose a combination of options a and b. First we'll use domain knowledge to pick out features we think are relevant and not redundant. The hand-picked features are a reduced subset of the gameplay metrics, including off/def efficiency, orebs, 3pt, turnovers, free throws, and experience. We can also look at the reduced set of variables on the correlation matrix above to see if any others need to be removed.
+
+As we can see from the correlation matrix, none of the remaining variables have a high correlation, so we can proceed with clustering using the selected subset of features. As mentioned above, the k-means algorithm needs a parameter k to specify the number of clusters. To determine the optimal number of clusters to group our data into, we can plot the within-cluster sum of squared errors as a function of k. The optimal k value should be at the "elbow point": where the marginal decrease of within SSE levels off. However, based on the plot below, there isn't a clear elbow point, so we'll try clustering with both k=3 and k=4.
+
+```{r, message=F, warning=F, echo=F}
+source("clustering.R")
+
+plot_elbow()
+
+```
+
+
+Below are the PCA-reduced cluster visualizations generated from the kmeans algorithm with k = 3 and k = 4. If we have a priori or historical knowledge about different basketball teams over the past five years, we can visually inspect the plots to either confirm or question previously held beliefs about similar-style basketball teams. For example, we can see that the 2016-2019 Virginia basketball teams are all located closely together in the same cluster. This confirms our previously held belief that coach Tony Bennett instills a distinct and consistent style of play that is different from most other basketball teams. 
+
+```{r, message=F, warning=F, echo=F}
+
+plot_fviz()[[1]]
+plot_fviz()[[2]]
+
+```
+
 ## Methods
 
   In order to predict the number of tournament games won by a given team, several models were fit and assessed.  This prediction is a regression-type problem as the target variable is continuous over the range [0,6].  The five model types chosen for this task were lasso regression, ridge regression, multilinear regression, Multivariate Adaptive Regression Splines (MARS), boosting, and random forest.  For models with varying parameter values, such as lambda in lasso regression, an initial cross validation was run with built in cross validation functionality to find the best parameter values.  Once the best parameter models were gathered, all of the models were compared against each other using ten fold K-folds cross validation.  Two separate metrics were used to score the models.  The first is the mean squared error (MSE) of the model's prediction against the actual number of NCAA tournament games won.  The second is a custom metric called "accuracy" that measures the percentage of games correctly predicted within plus or minus a half game of the true value.  This metric was developed because it may have more applicability to game winner prediction if this model is used to fill out a March Madness Bracket than a pure MSE score.  Each model was scored and the average score for the ten cross validation folds is displayed in the table below.
