@@ -2,7 +2,9 @@
 title: "March Madness ML"
 author: "Richard Hardis, Arjun Goyal, Fred Sackfield, Anthony Temeliescu"
 date: "3/19/2020"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -11,7 +13,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Abstract
 
+  Abstract here
+
 # Report
+
+## Introduction
+
+	Every year, millions of Americans turn on their televisions and tune into the NCAA men’s basketball tournament, commonly known as March Madness.  This tournament pits 68 of the best men’s teams from every conference across Division I against each other in a single elimination style bracket.  This tournament is the culmination of a full season’s worth of training and games and the athletic, and financial, stakes could not be higher for every program.  Not only does March madness generate a tremendous media buzz, it also is the topic statistical analysis on every level from amateurs betting in March Madness brackets to individuals with Ph.D.’s attempting to predict the outcome of the games.  Our group is proposing a novel approach to take on this same task.  Using data gathered from various sources on the internet, our project goal is to predict the number of tournament wins for teams participating in the NCAA tournament.
 
 ## Data Collection
 
